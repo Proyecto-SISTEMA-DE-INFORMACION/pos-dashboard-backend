@@ -5,9 +5,9 @@ Lee la conexion desde el archivo .env del proyecto, crea la base si no
 existe y ejecuta db/schema.sql (solo estructura, sin datos).
 
 Uso, desde la carpeta del proyecto y con el entorno virtual activado:
-    python db/crear_bdd.py                  crea la base y las tablas
-    python db/crear_bdd.py --con-catalogos  ademas carga medios de pago y temporadas
-    python db/crear_bdd.py --reset          borra el esquema y lo crea de nuevo (pide confirmacion)
+    python db/crear_db.py                  crea la base y las tablas
+    python db/crear_db.py --con-catalogos  ademas carga medios de pago y temporadas
+    python db/crear_db.py --reset          borra el esquema y lo crea de nuevo (pide confirmacion)
 """
 
 import argparse
@@ -135,7 +135,7 @@ def main() -> None:
             if not args.reset:
                 print(
                     f"El esquema '{config['schema']}' ya existe: las tablas ya estan creadas.\n"
-                    "Para borrarlo y crearlo de nuevo usa: python db/crear_bdd.py --reset"
+                    "Para borrarlo y crearlo de nuevo usa: python db/crear_db.py --reset"
                 )
                 conexion.close()
                 return

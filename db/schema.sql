@@ -24,14 +24,18 @@ SET search_path TO botilleria;
 -- ---------------------------------------------------------------------
 CREATE TABLE usuario (
     id_usuario       INTEGER      GENERATED ALWAYS AS IDENTITY,
-    nombre_usuario   VARCHAR(50)  NOT NULL,
+    email            VARCHAR(255) NOT NULL,
+    nombre           VARCHAR(100) NOT NULL,
     contrasena_hash  VARCHAR(255) NOT NULL,
     tipo_usuario     VARCHAR(20)  NOT NULL DEFAULT 'LECTOR',
     CONSTRAINT pk_usuario PRIMARY KEY (id_usuario),
-    CONSTRAINT uq_usuario_nombre UNIQUE (nombre_usuario),
     CONSTRAINT ck_usuario_tipo CHECK (tipo_usuario IN ('ADMINISTRADOR', 'LECTOR')),
-    CONSTRAINT ck_usuario_nombre_no_vacio CHECK (btrim(nombre_usuario) <> '')
+    CONSTRAINT ck_usuario_email CHECK (email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+    CONSTRAINT ck_usuario_nombre_no_vacio CHECK (btrim(nombre) <> '')
 );
+
+-- El login es por email: "Admin@Pabst.cl" y "admin@pabst.cl" son el mismo usuario
+CREATE UNIQUE INDEX uq_usuario_email ON usuario (lower(email));
 
 -- ---------------------------------------------------------------------
 -- 2. CONVERSACION: cada chat con la IA
