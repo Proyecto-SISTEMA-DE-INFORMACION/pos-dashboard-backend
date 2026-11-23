@@ -2,7 +2,7 @@
 
 from sqlalchemy import (
     BigInteger, Boolean, Column, Date, DateTime, Integer, MetaData, String, Table, Text,
-    create_engine,
+    create_engine, true,
 )
 from sqlalchemy.engine import URL
 
@@ -104,6 +104,7 @@ proveedor = Table(
     "proveedor", metadata,
     Column("id_proveedor", Integer, primary_key=True),
     Column("nombre", String(100)),
+    Column("activo", Boolean, nullable=False, server_default=true()),
 )
 
 factura = Table(

@@ -18,6 +18,7 @@ from pathlib import Path
 import psycopg2
 from dotenv import load_dotenv
 from psycopg2 import sql
+from migrar_proveedores import agregar_activo
 
 CARPETA_DB = Path(__file__).resolve().parent
 RAIZ_PROYECTO = CARPETA_DB.parent
@@ -110,12 +111,16 @@ def esquema_existe(cursor, esquema: str) -> bool:
     return cursor.fetchone() is not None
 
 
-def ejecutar_archivo(cursor, archivo: Path) -> None:
+def ejecutar_archivo(cursor, archivo: Path, esquema: str) -> None:
     if not archivo.exists():
         salir(f"No se encontro {archivo}.")
     # Sin parametros, psycopg2 envia el archivo completo tal cual
     # (el propio archivo maneja BEGIN y COMMIT).
-    cursor.execute(archivo.read_text(encoding="utf-8"))
+    nombre_sql = sql.Identifier(esquema).as_string(cursor)
+    contenido = archivo.read_text(encoding="utf-8")
+    contenido = contenido.replace("CREATE SCHEMA botilleria;", f"CREATE SCHEMA {nombre_sql};", 1)
+    contenido = contenido.replace("SET search_path TO botilleria;", f"SET search_path TO {nombre_sql};", 1)
+    cursor.execute(contenido)
 
 
 def main() -> None:
@@ -133,11 +138,13 @@ def main() -> None:
     with conexion.cursor() as cursor:
         if esquema_existe(cursor, config["schema"]):
             if not args.reset:
-                print(
-                    f"El esquema '{config['schema']}' ya existe: las tablas ya estan creadas.\n"
-                    "Para borrarlo y crearlo de nuevo usa: python db/crear_db.py --reset"
-                )
-                conexion.close()
+                try:
+                    agregar_activo(cursor, config["schema"])
+                except psycopg2.Error as error:
+                    salir(f"No se pudo actualizar el catálogo de proveedores.\nDetalle: {str(error).strip()}")
+                finally:
+                    conexion.close()
+                print(f"Esquema '{config['schema']}' actualizado. Se conservaron los registros existentes.")
                 return
             respuesta = input(
                 f"Se borraran TODAS las tablas y datos de '{config['schema']}'. "
@@ -151,10 +158,10 @@ def main() -> None:
             print(f"Esquema '{config['schema']}' borrado.")
 
         try:
-            ejecutar_archivo(cursor, ARCHIVO_SCHEMA)
+            ejecutar_archivo(cursor, ARCHIVO_SCHEMA, config["schema"])
             print("Tablas creadas desde schema.sql.")
             if args.con_catalogos:
-                ejecutar_archivo(cursor, ARCHIVO_CATALOGOS)
+                ejecutar_archivo(cursor, ARCHIVO_CATALOGOS, config["schema"])
                 print("Catalogos cargados desde seed_catalogos.sql.")
 
             cursor.execute(

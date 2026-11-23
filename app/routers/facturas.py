@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field, field_validator
+from fastapi import APIRouter, Depends, HTTPException, Response
+from pydantic import BaseModel, Field
 from sqlalchemy import func, insert, select
 
 from datetime import datetime
 
-from app.db import engine, factura, proveedor
+from app.db import engine, factura, medio_pago, proveedor, venta
+from app.exportacion_facturas import generar_excel
 from app.routers.ventas import asegurar_temporadas
 from app.formato import ZONA, fecha_hora
 from app.security import solo_administrador, usuario_actual
@@ -13,16 +14,8 @@ router = APIRouter(prefix="/facturas", tags=["facturas"])
 
 
 class FacturaEntrada(BaseModel):
-    proveedor: str = Field(min_length=1, max_length=100)
+    id_proveedor: int = Field(gt=0, le=2_147_483_647, strict=True)
     monto: int = Field(gt=0, le=2_000_000_000, description="Monto bruto en pesos, con IVA")
-
-    @field_validator("proveedor")
-    @classmethod
-    def limpiar(cls, valor: str) -> str:
-        valor = " ".join(valor.split())
-        if not valor:
-            raise ValueError("El proveedor no puede estar vacío.")
-        return valor
 
 
 def _consulta():
@@ -43,19 +36,34 @@ def listar(actual: dict = Depends(usuario_actual)):
     return [_json(f) for f in filas]
 
 
+@router.get("/exportacion")
+def exportar(actual: dict = Depends(usuario_actual)):
+    with engine.connect().execution_options(isolation_level="REPEATABLE READ") as con:
+        filas = con.execute(_consulta().order_by(factura.c.fecha_ingreso.desc(), factura.c.id_factura.desc())).all()
+        debito = con.scalar(
+            select(func.coalesce(func.sum(venta.c.valor_iva), 0))
+            .select_from(venta.join(medio_pago, medio_pago.c.id_medio == venta.c.id_medio))
+            .where(medio_pago.c.cuenta_como_ingreso)
+        )
+    return Response(
+        generar_excel([_json(f) for f in filas], debito),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="compras-proveedores-iva.xlsx"'},
+    )
+
+
 @router.post("", status_code=201)
 def registrar(entrada: FacturaEntrada, actual: dict = Depends(solo_administrador)):
     with engine.begin() as con:
         hoy = datetime.now(ZONA).date()
-        asegurar_temporadas(con, {hoy})
         id_proveedor = con.execute(
             select(proveedor.c.id_proveedor)
-            .where(func.upper(func.btrim(proveedor.c.nombre)) == entrada.proveedor.upper())
-        ).scalar()
+            .where(proveedor.c.id_proveedor == entrada.id_proveedor, proveedor.c.activo)
+            .with_for_update(read=True)
+        ).scalar_one_or_none()
         if id_proveedor is None:
-            id_proveedor = con.execute(
-                insert(proveedor).values(nombre=entrada.proveedor).returning(proveedor.c.id_proveedor)
-            ).scalar_one()
+            raise HTTPException(409, "El proveedor seleccionado no está activo en el catálogo.")
+        asegurar_temporadas(con, {hoy})
         id_factura = con.execute(
             insert(factura)
             .values(id_proveedor=id_proveedor, monto_bruto=entrada.monto, fecha_factura=hoy, id_usuario=actual["id_usuario"],

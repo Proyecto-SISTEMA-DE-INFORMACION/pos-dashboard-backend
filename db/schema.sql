@@ -175,6 +175,7 @@ CREATE INDEX ix_venta_carga     ON venta (id_carga);
 CREATE TABLE proveedor (
     id_proveedor  INTEGER      GENERATED ALWAYS AS IDENTITY,
     nombre        VARCHAR(100) NOT NULL,
+    activo        BOOLEAN      NOT NULL DEFAULT TRUE,
     CONSTRAINT pk_proveedor PRIMARY KEY (id_proveedor),
     CONSTRAINT ck_proveedor_nombre_no_vacio CHECK (btrim(nombre) <> '')
 );

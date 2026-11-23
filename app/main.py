@@ -12,14 +12,14 @@ from sqlalchemy import text
 
 from app import config
 from app.db import engine
-from app.routers import auth, chat, facturas, ventas
+from app.routers import auth, chat, facturas, proveedores, usuarios, ventas
 
 app = FastAPI(title="Pabst BI API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.FRONTEND_ORIGINS,
-    allow_methods=["GET", "POST", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
 # /documentos devuelve miles de filas: comprimirlas reduce mucho lo que viaja al navegador
@@ -28,6 +28,8 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(auth.router)
 app.include_router(ventas.router)
 app.include_router(facturas.router)
+app.include_router(proveedores.router)
+app.include_router(usuarios.router)
 app.include_router(chat.router)
 
 

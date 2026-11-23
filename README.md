@@ -24,18 +24,29 @@ Usa solo las librerías de `requirements.txt` y PostgreSQL 16.
    ```
    Queda en http://localhost:8000 y la documentación interactiva en http://localhost:8000/docs
 
+## Actualizar una instalación existente
+
+Antes de iniciar la versión que permite eliminar proveedores del catálogo, ejecuta
+`python db/migrar_proveedores.py` desde el directorio del backend con la configuración de la base correspondiente.
+La migración se puede repetir y conserva los proveedores y las facturas existentes.
+El script `python db/crear_db.py` aplica la misma migración cuando el esquema ya existe.
+
 ## Endpoints
 
 | Método | Ruta | Qué hace | Requiere |
 |---|---|---|---|
 | POST | `/auth/login` | Entrega el token de sesión (`{email, password}`) | — |
 | GET | `/auth/me` | Datos del usuario conectado | sesión |
+| GET | `/usuarios` | Lista las cuentas del dashboard | administrador |
+| POST | `/usuarios` | Crea una cuenta con correo, contraseña y rol | administrador |
+| PUT | `/usuarios/{id}` | Edita nombre, correo, rol y, opcionalmente, contraseña | administrador |
+| DELETE | `/usuarios/{id}` | Elimina una cuenta sin facturas asociadas | administrador |
 | POST | `/upload?nombre=archivo.xlsx` | Carga el libro de ventas (cuerpo binario `application/octet-stream`) | administrador |
 | GET | `/cargas` | Historial de cargas | sesión |
 | DELETE | `/cargas/{id}` | Borra una carga y sus ventas | administrador |
 | GET | `/documentos` | Todas las ventas | sesión |
 | GET | `/facturas` | Facturas de proveedores | sesión |
-| POST | `/facturas` | Registra una factura (`{proveedor, monto}`) | administrador |
+| POST | `/facturas` | Registra una factura para un proveedor activo (`{id_proveedor, monto}`) | administrador |
 | GET | `/conversaciones` | Chats del usuario | sesión |
 | GET | `/conversaciones/{id}/mensajes` | Mensajes de un chat | sesión |
 | DELETE | `/conversaciones/{id}` | Borra un chat | sesión |
@@ -43,6 +54,8 @@ Usa solo las librerías de `requirements.txt` y PostgreSQL 16.
 | GET | `/salud` | Revisa la conexión a la base | — |
 
 La sesión se envía en el encabezado `Authorization: Bearer <token>`.
+
+En el dashboard, el acceso **Administrar usuarios** aparece al pie del menú lateral al iniciar sesión como administrador. Las cuentas nuevas pueden tener rol **Lector** o **Administrador**.
 
 ## Libro de ventas
 
