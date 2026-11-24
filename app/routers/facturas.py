@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, insert, select
+from sqlalchemy import delete, func, insert, select
+from sqlalchemy.exc import IntegrityError
 
 from datetime import datetime
 
@@ -72,3 +73,16 @@ def registrar(entrada: FacturaEntrada, actual: dict = Depends(solo_administrador
         ).scalar_one()
         fila = con.execute(_consulta().where(factura.c.id_factura == id_factura)).one()
     return _json(fila)
+
+@router.delete("/{id_factura}", status_code=204)
+def eliminar(id_factura: int, actual: dict = Depends(solo_administrador)):
+    try:
+        with engine.begin() as con:
+            borradas = con.execute(
+                delete(factura).where(factura.c.id_factura == id_factura)
+            ).rowcount
+            if not borradas:
+                raise HTTPException(404, "La factura no existe.")
+    except IntegrityError:
+        raise HTTPException(409, "No se puede eliminar la factura porque tiene registros asociados.")
+    return Response(status_code=204)
