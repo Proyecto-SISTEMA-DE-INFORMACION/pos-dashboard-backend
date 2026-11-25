@@ -31,6 +31,10 @@ Antes de iniciar la versión que permite eliminar proveedores del catálogo, eje
 La migración se puede repetir y conserva los proveedores y las facturas existentes.
 El script `python db/crear_db.py` aplica la misma migración cuando el esquema ya existe.
 
+Para las metas mensuales, ejecuta `python db/migrar_metas.py` (crea la tabla `meta_mensual` si no existe).
+`python db/crear_db.py` también la crea cuando el esquema ya existe, y con `--con-catalogos` carga los medios de pago
+y temporadas sin borrar datos.
+
 ## Endpoints
 
 | Método | Ruta | Qué hace | Requiere |
@@ -47,6 +51,9 @@ El script `python db/crear_db.py` aplica la misma migración cuando el esquema y
 | GET | `/documentos` | Todas las ventas | sesión |
 | GET | `/facturas` | Facturas de proveedores | sesión |
 | POST | `/facturas` | Registra una factura para un proveedor activo (`{id_proveedor, monto}`) | administrador |
+| GET | `/metas` | Metas de ingresos por mes (`[{mes: "2026-03", monto, usuario, actualizado}]`) | sesión |
+| PUT | `/metas/{AAAA-MM}` | Crea o reemplaza la meta de ese mes (`{monto}`) | administrador |
+| DELETE | `/metas/{AAAA-MM}` | Borra la meta de ese mes | administrador |
 | GET | `/conversaciones` | Chats del usuario | sesión |
 | GET | `/conversaciones/{id}/mensajes` | Mensajes de un chat | sesión |
 | DELETE | `/conversaciones/{id}` | Borra un chat | sesión |

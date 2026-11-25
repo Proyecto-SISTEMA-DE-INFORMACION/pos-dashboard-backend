@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 from app import config
 from app.db import engine
-from app.routers import auth, chat, facturas, proveedores, usuarios, ventas
+from app.routers import auth, chat, facturas, metas, proveedores, usuarios, ventas
 
 app = FastAPI(title="Pabst BI API", version="1.0.0")
 
@@ -30,6 +30,7 @@ app.include_router(ventas.router)
 app.include_router(facturas.router)
 app.include_router(proveedores.router)
 app.include_router(usuarios.router)
+app.include_router(metas.router)
 app.include_router(chat.router)
 
 

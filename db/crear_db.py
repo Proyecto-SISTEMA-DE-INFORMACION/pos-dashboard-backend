@@ -19,6 +19,7 @@ import psycopg2
 from dotenv import load_dotenv
 from psycopg2 import sql
 from migrar_proveedores import agregar_activo
+from migrar_metas import crear_meta_mensual
 
 CARPETA_DB = Path(__file__).resolve().parent
 RAIZ_PROYECTO = CARPETA_DB.parent
@@ -140,8 +141,12 @@ def main() -> None:
             if not args.reset:
                 try:
                     agregar_activo(cursor, config["schema"])
+                    crear_meta_mensual(cursor, config["schema"])
+                    if args.con_catalogos:
+                        ejecutar_archivo(cursor, ARCHIVO_CATALOGOS, config["schema"])
+                        print("Catalogos cargados desde seed_catalogos.sql.")
                 except psycopg2.Error as error:
-                    salir(f"No se pudo actualizar el catálogo de proveedores.\nDetalle: {str(error).strip()}")
+                    salir(f"No se pudo actualizar el esquema.\nDetalle: {str(error).strip()}")
                 finally:
                     conexion.close()
                 print(f"Esquema '{config['schema']}' actualizado. Se conservaron los registros existentes.")

@@ -209,6 +209,21 @@ CREATE INDEX ix_factura_proveedor ON factura (id_proveedor);
 CREATE INDEX ix_factura_fecha     ON factura (fecha_factura);
 
 -- ---------------------------------------------------------------------
+-- 10. META_MENSUAL: meta de ingresos de cada mes (una por mes y anio)
+-- ---------------------------------------------------------------------
+CREATE TABLE meta_mensual (
+    mes                  DATE        NOT NULL,
+    monto                BIGINT      NOT NULL,
+    id_usuario           INTEGER,
+    fecha_actualizacion  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT pk_meta_mensual PRIMARY KEY (mes),
+    CONSTRAINT ck_meta_mensual_dia CHECK (EXTRACT(DAY FROM mes) = 1),
+    CONSTRAINT ck_meta_mensual_monto CHECK (monto > 0),
+    CONSTRAINT fk_meta_mensual_usuario FOREIGN KEY (id_usuario)
+        REFERENCES usuario (id_usuario) ON DELETE SET NULL
+);
+
+-- ---------------------------------------------------------------------
 -- Trigger: asigna id_temporada segun la fecha de la venta o factura
 -- (el software no necesita enviarlo)
 -- ---------------------------------------------------------------------

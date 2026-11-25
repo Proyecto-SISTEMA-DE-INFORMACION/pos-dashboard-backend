@@ -117,3 +117,11 @@ factura = Table(
     Column("fecha_ingreso", DateTime(timezone=True)),
     Column("id_temporada", Integer),
 )
+
+meta_mensual = Table(
+    "meta_mensual", metadata,
+    Column("mes", Date, primary_key=True),
+    Column("monto", BigInteger),
+    Column("id_usuario", Integer),
+    Column("fecha_actualizacion", DateTime(timezone=True)),
+)
